@@ -1,0 +1,535 @@
+<!-- templates\staff.html -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>员工管理</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:system-ui, -apple-system, sans-serif;
+}
+body{
+    background:#f7f8fa;
+    padding:16px 16px 24px;
+}
+.btn-back{
+    padding:3px 8px;
+    font-size:12px;
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:5px;
+    margin-bottom:12px;
+}
+.btn-back:active{
+    background:#1d4ed8;
+}
+.card{
+    background:#ffffff;
+    width:100%;
+    max-width:800px;
+    margin:0 auto;
+    border-radius:16px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    height: calc(100vh - 80px);
+    position:relative;
+}
+.title{
+    font-size:22px;
+    font-weight:600;
+    text-align:center;
+    margin-bottom:14px;
+    padding-top:20px;
+}
+.table-wrap{
+    flex-grow:1;
+    overflow-y:auto;
+    padding:16px 20px 20px;
+}
+table{
+    width:100%;
+    border-collapse: collapse;
+}
+th,td{
+    border:1px solid #e5e7eb;
+    padding:10px 4px;
+    text-align:center;
+    font-size:14px;
+}
+th{
+    background:#f3f4f6;
+    font-weight:600;
+}
+tr:nth-child(even){
+    background:#f9fafb;
+}
+tr.add-row{
+    background:#eff6ff;
+}
+input.cell-input{
+    width:100%;
+    border:1px solid #2563eb;
+    border-radius:4px;
+    padding:4px;
+    font-size:14px;
+    text-align:center;
+}
+.btn-edit{
+    padding:4px 8px;
+    border:none;
+    border-radius:5px;
+    background:#2563eb;
+    color:#fff;
+    margin:2px;
+    font-size:13px;
+}
+.btn-del{
+    padding:4px 8px;
+    border:none;
+    border-radius:5px;
+    background:#dc2626;
+    color:#fff;
+    margin:2px;
+    font-size:13px;
+}
+.btn-save-row{
+    padding:4px 8px;
+    border:none;
+    border-radius:5px;
+    background:#16a34a;
+    color:#fff;
+    margin:2px;
+    font-size:13px;
+}
+.btn-cancel-row{
+    padding:4px 8px;
+    border:none;
+    border-radius:5px;
+    background:#6b7280;
+    color:#fff;
+    margin:2px;
+    font-size:13px;
+}
+/* ===== 和 list.html 完全统一的分页样式 ===== */
+.pagination{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+    margin-top:16px;
+}
+.pagination button{
+    padding:8px 14px;
+    border-radius:8px;
+    border:1px solid #2563eb;
+    background:#fff;
+    color:#2563eb;
+}
+.pagination button:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+}
+.pagination span{
+    font-size:15px;
+}
+/* toast 提示，和打卡页统一 */
+.toast{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    top:24px;
+    padding:10px 16px;
+    border-radius:8px;
+    color:#fff;
+    font-size:15px;
+    opacity:0;
+    transition:opacity 0.3s;
+    z-index:99;
+}
+.toast.show{
+    opacity:1;
+}
+.toast.success{
+    background:#22c55e;
+}
+.toast.warning{
+    background:#f59e0b;
+}
+.toast.error{
+    background:#ef4444;
+}
+/* 自定义确认弹窗 */
+.confirm-mask{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+}
+.confirm-box{
+    background:#fff;
+    width:280px;
+    padding:24px 20px;
+    border-radius:12px;
+}
+.confirm-text{
+    font-size:15px;
+    text-align:center;
+    margin-bottom:20px;
+    color:#333;
+}
+.confirm-btns{
+    display:flex;
+    gap:10px;
+}
+.confirm-btns button{
+    flex:1;
+    padding:9px;
+    border:none;
+    border-radius:8px;
+    font-size:15px;
+}
+.confirm-cancel{
+    background:#e5e7eb;
+    color:#333;
+}
+.confirm-ok{
+    background:#dc2626;
+    color:#fff;
+}
+</style>
+</head>
+<body>
+<div class="toast" id="toastBox"></div>
+<!-- 自定义确认弹窗 -->
+<div class="confirm-mask" id="confirmMask">
+    <div class="confirm-box">
+        <div class="confirm-text" id="confirmText"></div>
+        <div class="confirm-btns">
+            <button class="confirm-cancel" id="confirmCancel">取消</button>
+            <button class="confirm-ok" id="confirmOk">确定</button>
+        </div>
+    </div>
+</div>
+
+<button class="btn-back" onclick="location.href='/menu'">返回</button>
+<div class="card">
+    <div class="title">员工管理</div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>工号</th>
+                    <th>姓名</th>
+                    <th>绑定设备ID</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                <!-- 第一行：新增行 -->
+                <tr class="add-row">
+                    <td><input class="cell-input" id="new_uid" placeholder="4位数字工号" maxlength="4" oninput="this.value=this.value.replace(/\D/g,'')"></td>
+                    <td><input class="cell-input" id="new_name" placeholder="输入姓名"></td>
+                    <td>—</td>
+                    <td>
+                        <button class="btn-save-row" onclick="addStaff()">新增</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!-- 改class名字：pager → pagination，和list一致 -->
+        <div class="pagination" id="pageBox" style="display:none;">
+            <button id="btnPrev">上一页</button>
+            <span id="pageInfo"></span>
+            <button id="btnNext">下一页</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const tbody = document.getElementById("tbody");
+const pageBox = document.getElementById("pageBox");
+const btnPrev = document.getElementById("btnPrev");
+const btnNext = document.getElementById("btnNext");
+const pageInfo = document.getElementById("pageInfo");
+const toastBox = document.getElementById("toastBox");
+
+const confirmMask = document.getElementById("confirmMask");
+const confirmText = document.getElementById("confirmText");
+const confirmCancel = document.getElementById("confirmCancel");
+const confirmOk = document.getElementById("confirmOk");
+let confirmResolve = null;
+
+let currentPage = 1;
+let pageSize = 20;
+let total = 0;
+let isLoading = false;
+
+function showToast(text, type="success", delay=2000){
+    toastBox.innerText = text;
+    toastBox.className = "toast " + type;
+    toastBox.classList.add("show");
+    setTimeout(()=>{
+        toastBox.classList.remove("show");
+    }, delay);
+}
+
+// 自定义confirm，返回Promise
+function myConfirm(msg){
+    return new Promise(resolve=>{
+        confirmText.innerText = msg;
+        confirmMask.style.display = "flex";
+        confirmResolve = resolve;
+    })
+}
+confirmCancel.onclick = ()=>{
+    confirmMask.style.display = "none";
+    if(confirmResolve) confirmResolve(false);
+}
+confirmOk.onclick = ()=>{
+    confirmMask.style.display = "none";
+    if(confirmResolve) confirmResolve(true);
+}
+
+// 加载分页数据
+async function loadData(page=1){
+    if(isLoading) return;
+    isLoading = true;
+    try{
+        currentPage = page;
+        const res = await fetch("/api_staff_page",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({page:currentPage,pageSize})
+        });
+        if(!res.ok) throw new Error("接口请求异常");
+        const ret = await res.json();
+        if(!ret.ok){
+            showToast(ret.msg, "error");
+            return;
+        }
+        total = ret.total;
+        // 后端返回的pageSize覆盖前端
+        if (typeof ret.pageSize === "number") {
+            pageSize = ret.pageSize;
+        }
+        renderTable(ret.records);
+        renderPager();
+    }catch(err){
+        console.error(err);
+        showToast("加载员工列表失败", "error");
+    }finally{
+        isLoading = false;
+    }
+}
+
+function renderTable(list){
+    const addRow = tbody.querySelector(".add-row");
+    tbody.innerHTML = "";
+    tbody.appendChild(addRow);
+
+    list.forEach(row=>{
+        // 改成对象取值
+        const uid = row.uid;
+        const name = row.name;
+        const devId = row.bind_device_id;
+        const tr = document.createElement("tr");
+        tr.dataset.uid = uid;
+        const unbindBtnHtml = devId ? `<button class="btn-save-row" onclick="unbindDev('${uid}')">解绑</button>` : "";
+        tr.innerHTML = `
+            <td class="col-uid">${uid}</td>
+            <td class="col-name">${name}</td>
+            <td class="col-dev">${devId ? devId : "未绑定"}</td>
+            <td class="col-op">
+                <button class="btn-edit" onclick="startEdit(this)">编辑</button>
+                ${unbindBtnHtml}
+                <button class="btn-del" onclick="delRow('${uid}')">删除</button>
+            </td>
+        `
+        tbody.appendChild(tr);
+    })
+}
+
+function renderPager(){
+    const maxPage = Math.ceil(total / pageSize);
+    pageInfo.innerText = `第${currentPage}/${maxPage}页，共${total}条`;
+    btnPrev.disabled = currentPage <= 1;
+    btnNext.disabled = currentPage >= maxPage;
+    pageBox.style.display = "flex";
+}
+
+btnPrev.onclick = ()=>{
+    loadData(currentPage - 1);
+}
+btnNext.onclick = ()=>{
+    loadData(currentPage + 1);
+}
+
+// 新增员工
+async function addStaff(){
+    if(isLoading) return;
+    let uid = document.getElementById("new_uid").value.trim();
+    let name = document.getElementById("new_name").value.trim();
+
+    if(!/^\d{4}$/.test(uid)){
+        showToast("工号必须是4位数字！", "error");
+        return;
+    }
+    if(!name){
+        showToast("姓名不能为空", "error");
+        return;
+    }
+    isLoading = true;
+    try{
+        const res = await fetch("/staff_save",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({old_uid:"", uid, name})
+        });
+        if(!res.ok) throw new Error("提交异常");
+        const ret = await res.json();
+        if(!ret.ok){
+            showToast(ret.msg, "error");
+            return;
+        }
+        document.getElementById("new_uid").value = "";
+        document.getElementById("new_name").value = "";
+        showToast("新增成功");
+    }catch(err){
+        console.error(err);
+        showToast("新增失败", "error");
+    }finally{
+        isLoading = false;
+    }
+    await loadData(1);
+}
+
+// 进入编辑模式
+function startEdit(btn){
+    let tr = btn.closest("tr");
+    let oldUid = tr.dataset.uid;
+    let oldName = tr.querySelector(".col-name").textContent.trim();
+
+    tr.querySelector(".col-uid").textContent = oldUid;
+    tr.querySelector(".col-name").innerHTML = `<input class="cell-input" value="${oldName}">`;
+    tr.querySelector(".col-op").innerHTML = `
+        <button class="btn-save-row" onclick="saveEdit(this, '${oldUid}')">保存</button>
+        <button class="btn-cancel-row" onclick="cancelEdit(this, '${oldUid}','${oldName}')">取消</button>
+    `;
+}
+
+// 保存编辑
+async function saveEdit(btn, oldUid){
+    if(isLoading) return;
+    let tr = btn.closest("tr");
+    let newName = tr.querySelector(".col-name input").value.trim();
+
+    if(!newName){
+        showToast("姓名不能为空", "error");
+        return;
+    }
+    isLoading = true;
+    try{
+        const res = await fetch("/staff_save",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({old_uid:oldUid, uid:oldUid, name:newName})
+        });
+        if(!res.ok) throw new Error("提交异常");
+        const ret = await res.json();
+        if(!ret.ok){
+            showToast(ret.msg, "error");
+            return;
+        }
+        showToast("保存成功");
+    }catch(err){
+        console.error(err);
+        showToast("保存失败", "error");
+    }finally{
+        isLoading = false;
+    }
+    await loadData(currentPage);
+}
+
+// 取消编辑，恢复原样
+function cancelEdit(btn, uid, name){
+    let tr = btn.closest("tr");
+    tr.querySelector(".col-uid").textContent = uid;
+    tr.querySelector(".col-name").textContent = name;
+    tr.querySelector(".col-op").innerHTML = `
+        <button class="btn-edit" onclick="startEdit(this)">编辑</button>
+        <button class="btn-del" onclick="delRow('${uid}')">删除</button>
+    `;
+}
+
+// 删除
+async function delRow(uid){
+    if(isLoading) return;
+    const ok = await myConfirm("确定删除？");
+    if(!ok) return;
+    isLoading = true;
+    try{
+        const res = await fetch("/staff_del",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({uid})
+        });
+        if(!res.ok) throw new Error("提交异常");
+        const ret = await res.json();
+        if(!ret.ok){
+            showToast(ret.msg, "error");
+            return;
+        }
+        showToast("删除成功");
+    }catch(err){
+        console.error(err);
+        showToast("删除失败", "error");
+    }finally{
+        isLoading = false;
+    }
+    await loadData(currentPage);
+}
+
+// 解绑设备
+async function unbindDev(uid){
+    if(isLoading) return;
+    const ok = await myConfirm("确定解绑该员工的设备？");
+    if(!ok) return;
+    isLoading = true;
+    try{
+        const res = await fetch("/staff_unbind",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({uid})
+        });
+        if(!res.ok) throw new Error("提交异常");
+        const ret = await res.json();
+        if(!ret.ok){
+            showToast(ret.msg, "error");
+            return;
+        }
+        showToast("解绑成功");
+    }catch(err){
+        console.error(err);
+        showToast("解绑失败", "error");
+    }finally{
+        isLoading = false;
+    }
+    await loadData(currentPage);
+}
+
+// 初始加载
+loadData(1);
+</script>
+</body>
+</html>

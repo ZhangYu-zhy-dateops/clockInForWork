@@ -1,0 +1,23 @@
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.venv/
+
+# sqlite数据库
+*.db
+*.sqlite3
+
+# 临时文件
+*.tmp
+
+# 编辑器
+.idea/
+.vscode/
+*.log
+
+# ========== 本地文件夹文件==========
+版本/

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理员登录</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:system-ui, -apple-system, sans-serif;
+}
+body{
+    background:#f7f8fa;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    color:#333;
+    position:relative;
+}
+.btn-back{
+    position:absolute;
+    top:16px;
+    left:16px;
+    padding:3px 8px;
+    font-size:12px;
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:5px;
+}
+.btn-back:active{
+    background:#1d4ed8;
+}
+.card{
+    background:#ffffff;
+    width:100%;
+    max-width:420px;
+    padding:36px 28px;
+    border-radius:16px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08);
+    text-align:center;
+}
+.title{
+    font-size:24px;
+    font-weight:600;
+    margin-bottom:24px;
+}
+input{
+    width:100%;
+    padding:14px 12px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    font-size:17px;
+    margin-bottom:20px;
+    outline:none;
+}
+input:focus{
+    border-color:#2563eb;
+}
+.btn-primary{
+    width:100%;
+    padding:14px 0;
+    border:none;
+    border-radius:10px;
+    background:#2563eb;
+    color:#fff;
+    font-size:18px;
+    font-weight:500;
+}
+.btn-primary:active{
+    background:#1d4ed8;
+}
+/* 统一toast样式 */
+.toast{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    top:24px;
+    padding:10px 16px;
+    border-radius:8px;
+    color:#fff;
+    font-size:15px;
+    opacity:0;
+    transition:opacity 0.3s;
+    z-index:99;
+}
+.toast.show{
+    opacity:1;
+}
+.toast.success{
+    background:#22c55e;
+}
+.toast.warning{
+    background:#f59e0b;
+}
+.toast.error{
+    background:#ef4444;
+}
+</style>
+</head>
+<body>
+<div class="toast" id="toastBox"></div>
+<button class="btn-back" onclick="location.href='/'">返回</button>
+<div class="card">
+    <div class="title">管理员登录</div>
+    <form id="loginForm">
+        <input type="password" id="pwd" placeholder="输入管理员密码" autocomplete="current-password">
+        <button class="btn-primary" type="submit">登录</button>
+    </form>
+</div>
+
+<script>
+const toastBox = document.getElementById("toastBox");
+function showToast(text, type="success", delay=2000){
+    toastBox.innerText = text;
+    toastBox.className = "toast " + type;
+    toastBox.classList.add("show");
+    setTimeout(()=>{
+        toastBox.classList.remove("show");
+    }, delay);
+}
+
+document.getElementById("loginForm").onsubmit = async e=>{
+    e.preventDefault();
+    let pwd = document.getElementById("pwd").value.trim();
+    let res = await fetch("/admin_login",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({pwd:pwd})
+    })
+    let ret = await res.json();
+    if(ret.ok){
+        showToast("登录成功",type="success", delay=300);
+        setTimeout(()=>{
+            location.href="/menu";
+        },300);
+    }else{
+        showToast(ret.msg, "error");
+    }
+}
+</script>
+</body>
+</html>

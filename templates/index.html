@@ -1,0 +1,549 @@
+<!-- templates\index.html 内网打卡首页：设备绑定 + 打卡按钮 + 状态展示 -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内网一键打卡</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:system-ui, -apple-system, sans-serif;
+}
+body{
+    background:#f3f4f6;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px 16px;
+    color:#333;
+}
+.card{
+    background:#ffffff;
+    width:100%;
+    max-width:420px;
+    padding:32px 24px;
+    border-radius:20px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.06);
+    text-align:center;
+    position:relative;
+}
+
+.date-header{
+    font-size:14px;
+    color:#6b7280;
+    margin-top:-12px;
+    margin-bottom:20px;
+    cursor:default;
+    padding:8px 0;
+    user-select:none;
+}
+.title{
+    font-size:22px;
+    font-weight:600;
+    margin-bottom:24px;
+    color:#1f2937;
+}
+input{
+    width:100%;
+    padding:13px 14px;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    font-size:16px;
+    margin-bottom:20px;
+    outline:none;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+input:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.btn-primary{
+    width:100%;
+    padding:13px 0;
+    border:none;
+    border-radius:12px;
+    background:#2563eb;
+    color:#fff;
+    font-size:16px;
+    font-weight:500;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.btn-primary:active{
+    background:#1d4ed8;
+}
+.btn-primary:disabled{
+    background:#94a3b8;
+    cursor:not-allowed;
+    opacity:0.75;
+}
+
+/* 圆形打卡按钮专属样式 */
+.clock-area .btn-primary{
+    width:136px;
+    height:136px;
+    border-radius:50%;
+    display:block;
+    margin:20px auto 16px;
+    font-size:18px;
+}
+.clock-area .btn-primary:disabled{
+    background:#d1d5db;
+    color:#6b7280;
+    opacity:1;
+}
+
+.link-record{
+    font-size:15px;
+    font-weight:700;
+    color:#2563eb;
+    text-decoration:none;
+    white-space:nowrap;
+}
+.link-record:hover{
+    color:#1d4ed8;
+    text-decoration:underline;
+}
+
+.welcome-text{
+    font-size:22px;
+    margin-bottom:10px;
+    color:#1f2937;
+}
+.last-clock-tip{
+    font-size:14px;
+    color:#4b5563;
+    margin-bottom:12px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+}
+.status-row{
+    font-size:16px;
+    font-weight:600;
+    color:#1f2937;
+    margin-bottom:16px;
+    display:flex;
+    justify-content:center;
+    gap:32px;
+    row-gap:10px;
+    flex-wrap:wrap;
+}
+
+/* 每日寄语卡片 */
+.quote-card{
+    margin:0 auto;
+    width:260px;
+    background:#fffbeb;
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,0.07);
+    position:relative;
+    animation: boxBreath 5s ease-in-out infinite;
+}
+
+.quote-label{
+    text-align:center;
+    font-size:12px;
+    color:#b45309;
+    font-weight:400;
+    letter-spacing:1px;
+    padding-top:8px;
+    opacity:0.55;
+}
+
+.huangli-body{
+    min-height:60px;
+    padding:8px 12px 10px;
+    font-size:13px;
+    line-height:1.45;
+    text-align:center;
+    color:#7c2d12;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* 淡出动画类，切换寄语时使用 */
+.fade-out{
+    opacity:0;
+    transform: translateY(4px);
+}
+
+/* 卡片底部锯齿装饰 */
+.tip-edge::after{
+    content:"";
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    height:7px;
+    background:
+        linear-gradient(135deg, transparent 50%, #f3f4f6 50%) 0 0 / 9px 9px repeat-x,
+        linear-gradient(225deg, transparent 50%, #f3f4f6 50%) 4.5px 0 / 9px 9px repeat-x;
+}
+
+/* 呼吸动画 */
+@keyframes boxBreath{
+    0%{
+        box-shadow:0 2px 8px rgba(0,0,0,0.07);
+        transform: scale(1);
+    }
+    50%{
+        box-shadow:0 4px 14px rgba(220, 38, 38, 0.10);
+        transform: scale(1.008);
+    }
+    100%{
+        box-shadow:0 2px 8px rgba(0,0,0,0.07);
+        transform: scale(1);
+    }
+}
+
+/* Toast 消息提示框 */
+.toast{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    top:24px;
+    padding:11px 18px;
+    border-radius:10px;
+    color:#fff;
+    font-size:15px;
+    opacity:0;
+    transition:opacity 0.3s ease;
+    z-index:99;
+}
+.toast.show{
+    opacity:1;
+}
+.toast.success{
+    background:#22c55e;
+}
+.toast.warning{
+    background:#f59e0b;
+}
+.toast.error{
+    background:#ef4444;
+}
+</style>
+</head>
+<body>
+<!-- 顶部Toast提示容器 -->
+<div class="toast" id="toastBox"></div>
+
+<div class="card">
+    <!-- 日期显示，连续点击5次进入后台登录 -->
+    <div class="date-header" id="dateText"></div>
+
+    <!-- 绑定区域：设备未绑定时显示 -->
+    <div id="bind_area">
+        <div class="title">首次绑定，请输入工号</div>
+        <input type="text" id="uid" placeholder="输入工号">
+        <button class="btn-primary" onclick="bind()">绑定本机</button>
+    </div>
+
+    <!-- 打卡区域：绑定成功后显示 -->
+    <div id="clock_area" class="clock-area" style="display:none;">
+        <div class="welcome-text">你好：<span id="name"></span></div>
+        <div class="status-row">
+            <span id="statusIn">上班卡：❌ 未打</span>
+            <span id="statusOut">下班卡：❌ 未打</span>
+        </div>
+        <button class="btn-primary" id="btnClock" onclick="clockIn()">点击打卡</button>
+
+        <div class="last-clock-tip" id="lastClockTip">
+            <span>今日暂无打卡记录</span>
+            <a href="/list" class="link-record">查看打卡记录</a>
+        </div>
+
+        <div class="quote-card tip-edge">
+            <div class="quote-label">今日寄语</div>
+            <div class="huangli-body" id="quoteText"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+let deviceId = "";          // 当前设备唯一标识，存在localStorage
+let isSubmitting = false;   // 提交锁，防止重复提交
+let _t = 0;                 // 日期点击计数器（进入后台彩蛋）
+let _timer = null;          // 点击计数定时器
+let refreshLock = false;    // 状态刷新节流锁，防止频繁请求
+
+// DOM元素缓存
+const toastBox = document.getElementById("toastBox");
+const lastClockTip = document.getElementById("lastClockTip");
+const quoteText = document.getElementById("quoteText");
+const btnClock = document.getElementById("btnClock");
+const statusIn = document.getElementById("statusIn");
+const statusOut = document.getElementById("statusOut");
+const dateText = document.getElementById("dateText");
+
+// 星期中文映射
+const weekMap = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+
+/**
+ * 渲染顶部日期文本
+ */
+function renderDate(){
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth()+1;
+    const d = now.getDate();
+    const w = weekMap[now.getDay()];
+    dateText.innerText = `${y}年${m}月${d}日 ${w}`;
+}
+
+/**
+ * 日期文字点击事件：连续5次点击跳转后台登录
+ */
+function bindDateClick(){
+    dateText.addEventListener("click", () => {
+        _t += 1;
+        clearTimeout(_timer);
+        // 2秒内没有继续点击，计数器清零
+        _timer = setTimeout(() => { _t = 0; }, 2000);
+
+        if (_t >= 5) {
+            _t = 0;
+            if (confirm("前往后台？")) {
+                location.href = "/login";
+            }
+        }
+    });
+}
+
+// 兜底寄语列表，后端读取tips.xlsx失败时使用
+const FALLBACK_TIPS = [
+    "认真过好今天，就是对自己最好的交代。",
+    "每一次坚持，都会让明天更从容一点。",
+    "把小事做好，时间会给你答案。",
+    "保持热爱，保持节奏。"
+];
+
+/**
+ * 弹出Toast提示
+ * @param {string} text 提示文字
+ * @param {string} type 类型 success / warning / error
+ * @param {number} delay 显示时长ms
+ */
+function showToast(text, type="success", delay=2000){
+    toastBox.innerText = text;
+    toastBox.className = "toast " + type;
+    toastBox.classList.add("show");
+    setTimeout(()=>{
+        toastBox.classList.remove("show");
+    }, delay);
+}
+
+/**
+ * 随机获取兜底寄语
+ */
+function getFallbackTip(){
+    return FALLBACK_TIPS[Math.floor(Math.random() * FALLBACK_TIPS.length)];
+}
+
+/**
+ * 切换寄语，带淡出动画
+ * @param {string} text 寄语内容
+ */
+function showNote(text){
+    quoteText.classList.add("fade-out");
+    setTimeout(()=>{
+        quoteText.innerText = text;
+        quoteText.classList.remove("fade-out");
+    }, 400);
+}
+
+/**
+ * 绑定本机设备和工号
+ */
+async function bind(){
+    if(isSubmitting) return;
+    const uidInput = document.getElementById("uid");
+    const uid = uidInput.value.trim();
+    if(!uid){
+        showToast("请输入工号", "warning");
+        return;
+    }
+    isSubmitting = true;
+    btnClock.disabled = true;
+    try{
+        const res = await fetch("/bind",{
+            method:"POST",
+            body:JSON.stringify({dev:deviceId, uid:uid}),
+            headers:{"Content-Type":"application/json"}
+        });
+        if(!res.ok) throw new Error("接口异常");
+        const data = await res.json();
+        if(data.ok){
+            showToast("绑定成功");
+            setTimeout(()=>location.reload(), 600);
+        }else{
+            showToast(data.msg || "工号不存在", "warning");
+        }
+    }catch(err){
+        console.error(err);
+        showToast("请求失败", "error");
+    }finally{
+        isSubmitting = false;
+        btnClock.disabled = false;
+    }
+}
+
+/**
+ * 打卡主逻辑
+ */
+async function clockIn(){
+    if(btnClock.disabled) return;
+    if(isSubmitting) return;
+    isSubmitting = true;
+    btnClock.disabled = true;
+
+    try{
+        // 先校验是否允许打卡
+        const checkResp = await fetch("/check?dev="+deviceId);
+        if(!checkResp.ok) throw new Error("状态校验失败");
+        const checkRes = await checkResp.json();
+        if(!checkRes.ok || !checkRes.can_clock){
+            showToast("⚠ 当前不在打卡时段，无法提交", "warning");
+            await refreshClockStatus();
+            return;
+        }
+
+        // 提交打卡
+        const resp = await fetch("/clock",{
+            method:"POST",
+            body:JSON.stringify({dev:deviceId}),
+            headers:{"Content-Type":"application/json"}
+        });
+        if(!resp.ok) throw new Error("打卡提交异常");
+        const res = await resp.json();
+        if(res.ok){
+            showToast("✅ 打卡成功："+res.time);
+            showNote(res.tip || getFallbackTip());
+            lastClockTip.innerHTML = "<span>上次打卡：" + res.time + "</span><a href=\"/list\" class=\"link-record\">查看打卡记录</a>";
+            await fetchTodayStatus();
+            await refreshClockStatus();
+        }else{
+            showToast("❌ " + res.msg, "error");
+            await refreshClockStatus();
+        }
+    }catch(err){
+        console.error(err);
+        showToast("❌ 请求失败", "error");
+        await refreshClockStatus();
+    }finally{
+        isSubmitting = false;
+    }
+}
+
+/**
+ * 获取今日打卡状态（上班/下班是否已打）
+ */
+async function fetchTodayStatus(){
+    try{
+        const resp = await fetch("/api_last_today_clock?dev="+deviceId);
+        if(!resp.ok) throw new Error();
+        const ret = await resp.json();
+        if(ret.ok){
+            statusIn.innerText = ret.has_in ? "上班卡：✅ 已打" : "上班卡：❌ 未打";
+            statusOut.innerText = ret.has_out ? "下班卡：✅ 已打" : "下班卡：❌ 未打";
+            if(ret.last_time){
+                lastClockTip.innerHTML = "<span>上次打卡：" + ret.last_time + "</span><a href=\"/list\" class=\"link-record\">查看打卡记录</a>";
+            }
+        }
+    }catch(err){
+        console.error("获取今日打卡状态异常", err);
+    }
+}
+
+/**
+ * 刷新打卡按钮状态：是否可点、按钮文字
+ */
+async function refreshClockStatus(){
+    if(refreshLock) return;
+    refreshLock = true;
+    try{
+        const resp = await fetch("/check?dev="+deviceId);
+        if(!resp.ok) throw new Error();
+        const res = await resp.json();
+        if(res.ok){
+            const canClock = res.can_clock;
+            const ctype = res.current_clock_type; // in / out
+            const hasIn = res.has_in;
+            const hasOut = res.has_out;
+            const allDone = res.all_done || false;
+
+            if(allDone){
+                btnClock.disabled = true;
+                btnClock.innerText = "今日打卡全部完成";
+                return;
+            }
+            if(!canClock){
+                btnClock.disabled = true;
+                btnClock.innerText = "不在打卡时段";
+            }else{
+                if(ctype === "in"){
+                    btnClock.disabled = !!hasIn;
+                    btnClock.innerText = hasIn ? "今日上班卡已打完" : "上班打卡";
+                }else if(ctype === "out"){
+                    btnClock.disabled = !!hasOut;
+                    btnClock.innerText = hasOut ? "今日下班卡已打完" : "下班打卡";
+                }else{
+                    btnClock.disabled = true;
+                    btnClock.innerText = "暂不可打卡";
+                }
+            }
+        }
+    }catch(err){
+        console.error("刷新打卡状态异常", err);
+        btnClock.disabled = true;
+        btnClock.innerText = "状态异常";
+    }finally{
+        setTimeout(()=>{ refreshLock = false; }, 500);
+    }
+}
+
+/**
+ * 页面初始化入口
+ */
+async function init(){
+    renderDate();
+    bindDateClick();
+    // 读取本地设备ID，不存在则随机生成
+    deviceId = localStorage.getItem("devid");
+    if(!deviceId){
+        deviceId = Math.random().toString(36).slice(2);
+        localStorage.setItem("devid", deviceId);
+    }
+    try{
+        // 校验设备是否已经绑定员工
+        const resp = await fetch("/check?dev="+deviceId);
+        if(!resp.ok) throw new Error();
+        const res = await resp.json();
+        if(res.ok){
+            // 已绑定：切换到打卡界面
+            document.getElementById("bind_area").style.display="none";
+            document.getElementById("clock_area").style.display="block";
+            document.getElementById("name").innerText = res.name;
+            showNote(getFallbackTip());
+            await fetchTodayStatus();
+            await refreshClockStatus();
+        }
+    }catch(err){
+        console.error("初始化校验失败", err);
+    }
+    // 页面切回前台自动刷新状态
+    window.addEventListener('focus', refreshClockStatus);
+}
+
+init();
+</script>
+</body>
+</html>

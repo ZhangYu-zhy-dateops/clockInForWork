@@ -1,0 +1,606 @@
+<!-- templates\list.html 员工个人考勤记录页面（日历+列表双视图） -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的考勤记录</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+body{
+    background:#f7f8fa;
+    padding:16px 12px 24px;
+}
+.btn-back{
+    padding:6px 12px;
+    font-size:13px;
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    margin-bottom:12px;
+}
+.btn-back:active{
+    background:#1d4ed8;
+}
+.card{
+    background:#fff;
+    max-width:1000px;
+    width:100%;
+    margin:0 auto;
+    border-radius:16px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08);
+    padding:20px 16px;
+}
+.title{
+    font-size:22px;
+    font-weight:600;
+    text-align:center;
+    margin-bottom:20px;
+    color:#111827;
+}
+.top-bar{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+}
+select, button{
+    padding:10px 8px;
+    font-size:15px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    background:#fff;
+    color:#374151;
+}
+button{
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    cursor:pointer;
+}
+button:active{
+    background:#1d4ed8;
+}
+#tip{
+    text-align:center;
+    font-size:14px;
+    color:#666;
+    margin-bottom:14px;
+    min-height:22px;
+}
+
+/* ========== 日历部分：轻松风格，细边框，边界清晰不厚重 ========== */
+#calendarBox{
+    background:#fff;
+    border:1px solid #b7cbed;
+    border-radius:16px;
+    padding:14px 10px;
+    margin-bottom:16px;
+}
+.calendar-week{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    width:100%;
+}
+.week-label{
+    text-align:center;
+    padding:10px 4px;
+    font-size:14px;
+    font-weight:600;
+    color:#1e40af;
+    background:#dbeafe;
+    border:1px solid #93c5fd;
+    border-radius:10px;
+}
+.calendar-day{
+    min-height:94px;
+    border:1px solid #b7cbed;
+    padding:10px 6px;
+    font-size:14px;
+    text-align:center;
+    background:#ffffff;
+    border-radius:12px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+}
+.calendar-day:hover{
+    background:#f8fafc;
+}
+/* 非本月日期样式 */
+.calendar-day.other{
+    background:#f8fafc;
+    color:#cbd5e1;
+    border:1px solid #d7e0ed;
+}
+.day-num{
+    font-weight:700;
+    font-size:20px;
+    color:#1e293b;
+    margin-bottom:8px;
+}
+/* 打卡状态标签 */
+.tag-ok,
+.tag-lack-in,
+.tag-lack-out,
+.tag-none{
+    display:inline-block;
+    width:100%;
+    padding:5px 4px;
+    border-radius:999px;
+    font-size:13px;
+    line-height:1.4;
+    font-weight:600;
+    border:1px solid rgba(0,0,0,0.08);
+}
+.tag-ok{
+    background:#bbf7d0;
+    color:#166534;
+}
+.tag-lack-in{
+    background:#fed7aa;
+    color:#92400e;
+}
+.tag-lack-out{
+    background:#fed7aa;
+    color:#92400e;
+}
+.tag-none{
+    background:#f1f5f9;
+    color:#64748b;
+}
+/* ========== 日历部分结束 ========== */
+
+/* 列表表格容器 */
+.table-wrap{
+    max-height:400px;
+    overflow:auto;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+th,td{
+    border:1px solid #e5e7eb;
+    padding:10px 4px;
+    text-align:center;
+    font-size:14px;
+    color:#374151;
+    word-break:break-all;
+}
+th{
+    background:#f3f4f6;
+    font-weight:600;
+}
+tr:nth-child(even){
+    background:#f9fafb;
+}
+
+/* 手机端适配 */
+@media (max-width:768px){
+    .card{
+        padding:16px 10px;
+    }
+    .title{
+        font-size:18px;
+        margin-bottom:16px;
+    }
+    .week-label{
+        font-size:12px;
+        padding:9px 2px;
+    }
+    .calendar-day{
+        min-height:76px;
+        font-size:12px;
+        padding:8px 4px;
+    }
+    .day-num{
+        font-size:17px;
+        margin-bottom:6px;
+    }
+    .tag-ok,
+    .tag-lack-in,
+    .tag-lack-out,
+    .tag-none{
+        font-size:11px;
+        padding:4px 2px;
+    }
+    th,td{
+        font-size:13px;
+        padding:8px 2px;
+    }
+    select,button{
+        font-size:13px;
+        padding:8px 10px;
+    }
+}
+</style>
+</head>
+<body>
+<!-- 返回打卡主页按钮 -->
+<button class="btn-back" onclick="location.href='/'">返回打卡</button>
+<div class="card">
+    <div class="title">我的考勤记录</div>
+
+    <!-- 筛选控制栏：年月选择、查询、视图切换 -->
+    <div class="top-bar">
+        <select id="selYear"></select>
+        <select id="selMonth"></select>
+        <button id="btnQuery">查询</button>
+        <button id="btnSwitch">切换：列表视图</button>
+    </div>
+
+    <!-- 提示信息区域 -->
+    <div id="tip"></div>
+    <!-- 日历视图容器 -->
+    <div id="calendarBox"></div>
+
+    <!-- 打卡明细列表容器 -->
+    <div class="table-wrap" id="tableWrap" style="display:none;">
+        <table>
+            <thead>
+                <tr>
+                    <th>打卡时间</th>
+                    <th>类型</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function () {
+    // 从本地存储读取设备唯一标识devid，用来关联个人打卡记录
+    const dev = localStorage.getItem("devid");
+    const tip = document.getElementById("tip");
+    const tableWrap = document.getElementById("tableWrap");
+    const tbody = document.getElementById("tbody");
+    const selYear = document.getElementById("selYear");
+    const selMonth = document.getElementById("selMonth");
+    const btnQuery = document.getElementById("btnQuery");
+    const btnSwitch = document.getElementById("btnSwitch");
+    const calendarBox = document.getElementById("calendarBox");
+    const pageBox = document.getElementById("pageBox");
+
+    let viewMode = "calendar";   // 当前视图模式：calendar=日历，list=列表
+    let allRecords = [];         // 保存当前查询月份全部打卡记录
+    let isLoading = false;       // 加载锁，防止重复并发请求
+
+    /**
+     * 设置元素文本
+     * @param {HTMLElement} el DOM元素
+     * @param {string} txt 要显示的文字
+     */
+    function setText(el, txt) {
+        if (el) {
+            el.innerText = txt;
+        }
+    }
+
+    /**
+     * 控制元素显示隐藏
+     * @param {HTMLElement} el DOM元素
+     * @param {boolean} flag true显示 false隐藏
+     */
+    function setShow(el, flag) {
+        if (el) {
+            el.style.display = flag ? "block" : "none";
+        }
+    }
+
+    // 校验关键DOM是否存在，缺失直接提示
+    if (!tip || !tableWrap || !tbody || !selYear || !selMonth || !btnQuery || !btnSwitch || !calendarBox) {
+        alert("页面DOM缺失，请检查ID");
+        return;
+    }
+
+    // 没有设备ID，说明未绑定，直接提示
+    if (!dev) {
+        setText(tip, "未识别设备，请返回首页绑定");
+        setShow(tip, true);
+        return;
+    }
+
+    /**
+     * 填充月份下拉选项 1~12月
+     */
+    function fillMonth() {
+        selMonth.innerHTML = "";
+        for (let i = 1; i <= 12; i++) {
+            const opt = document.createElement("option");
+            opt.value = i;
+            opt.textContent = i + "月";
+            selMonth.appendChild(opt);
+        }
+    }
+
+    /**
+     * 请求后端，获取该设备有打卡记录的年份列表
+     */
+    async function getExistYearList() {
+        const res = await fetch("/api_my_exist_year", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({"dev": dev})
+        });
+        const data = await res.json();
+        return data;
+    }
+
+    /**
+     * 将打卡记录按日期分组，标记每日是否有上班/下班卡
+     * @param {Array} records 原始打卡数组
+     * @returns {Object} key=日期字符串 yyyy-MM-dd，value={in:bool,out:bool}
+     */
+    function groupByDay(records) {
+        const map = {};
+        for (let i = 0; i < records.length; i++) {
+            const item = records[i];
+            const d = item.dt.split(" ")[0]; // 截取日期部分，丢掉时分秒
+            const t = item.type;
+            if (!map[d]) {
+                map[d] = {
+                    "in": false,
+                    "out": false
+                };
+            }
+            if (t === "in") {
+                map[d].in = true;
+            }
+            if (t === "out") {
+                map[d].out = true;
+            }
+        }
+        return map;
+    }
+
+    /**
+     * 渲染日历视图
+     */
+    function renderCalendar() {
+        setShow(tip, false);
+        if (allRecords.length === 0) {
+            setText(tip, "该年月无打卡记录");
+            setShow(tip, true);
+            calendarBox.innerHTML = "";
+            return;
+        }
+        const y = Number(selYear.value);
+        const m = Number(selMonth.value);
+        const dayMap = groupByDay(allRecords);
+        calendarBox.innerHTML = "";
+
+        // 星期表头：日 一 二 三 四 五 六
+        const weekHead = document.createElement("div");
+        weekHead.className = "calendar-week";
+        const weekTxt = ["日","一","二","三","四","五","六"];
+        for (let w = 0; w < weekTxt.length; w++) {
+            const wEl = document.createElement("div");
+            wEl.className = "week-label";
+            wEl.textContent = weekTxt[w];
+            weekHead.appendChild(wEl);
+        }
+        calendarBox.appendChild(weekHead);
+
+        const firstDay = new Date(y, m - 1, 1);    // 当月第一天
+        const lastDay = new Date(y, m, 0);          // 当月最后一天
+        const startWeek = firstDay.getDay();        // 当月第一天是星期几（0=周日）
+        const totalDays = lastDay.getDate();        // 当月总天数
+
+        let weekDiv = document.createElement("div");
+        weekDiv.className = "calendar-week";
+        // 月初前置空白格子，对齐星期
+        for (let i = 0; i < startWeek; i++) {
+            const empty = document.createElement("div");
+            empty.className = "calendar-day other";
+            weekDiv.appendChild(empty);
+        }
+        // 循环每一天渲染单元格
+        for (let i = 1; i <= totalDays; i++) {
+            const mStr = String(m).padStart(2, "0");
+            const dStr = String(i).padStart(2, "0");
+            const dateStr = y + "-" + mStr + "-" + dStr;
+            const info = dayMap[dateStr];
+
+            const cell = document.createElement("div");
+            cell.className = "calendar-day";
+            let html = "<div class='day-num'>" + i + "</div>";
+            if (info) {
+                if (info.in && info.out) {
+                    html = html + "<div class='tag-ok'>正常</div>";
+                } else if (!info.in && info.out) {
+                    html = html + "<div class='tag-lack-in'>缺上班卡</div>";
+                } else if (info.in && !info.out) {
+                    html = html + "<div class='tag-lack-out'>缺下班卡</div>";
+                }
+            } else {
+                html = html + "<div class='tag-none'>无记录</div>";
+            }
+            cell.innerHTML = html;
+            weekDiv.appendChild(cell);
+
+            // 周六（getDay=6），结束当前这一行，新建一周行
+            if (new Date(y, m - 1, i).getDay() === 6) {
+                calendarBox.appendChild(weekDiv);
+                weekDiv = document.createElement("div");
+                weekDiv.className = "calendar-week";
+            }
+        }
+
+        // 月末不足7个的行，补灰色占位格子
+        if (weekDiv.children.length > 0) {
+            let hasRealDay = false;
+            for(let c of weekDiv.children){
+                if(!c.classList.contains("other")){
+                    hasRealDay = true;
+                    break;
+                }
+            }
+            if(hasRealDay){
+                while (weekDiv.children.length < 7) {
+                    const empty = document.createElement("div");
+                    empty.className = "calendar-day other";
+                    weekDiv.appendChild(empty);
+                }
+                calendarBox.appendChild(weekDiv);
+            }
+        }
+    }
+
+    /**
+     * 渲染打卡明细列表视图
+     */
+    function renderList() {
+        setShow(tip, false);
+        tbody.innerHTML = "";
+        if (allRecords.length === 0) {
+            setText(tip, "该年月无打卡记录");
+            setShow(tip, true);
+            return;
+        }
+        for (let i = 0; i < allRecords.length; i++) {
+            const item = allRecords[i];
+            let typeText = "";
+            if (item.type === "in") {
+                typeText = "上班卡";
+            } else {
+                typeText = "下班卡";
+            }
+            const tr = document.createElement("tr");
+            tr.innerHTML = "<td>" + item.dt + "</td><td>" + typeText + "</td>";
+            tbody.appendChild(tr);
+        }
+    }
+
+    /**
+     * 根据当前viewMode切换渲染视图
+     */
+    function updateView() {
+        if (viewMode === "calendar") {
+            setText(btnSwitch, "切换：列表视图");
+            setShow(calendarBox, true);
+            setShow(tableWrap, false);
+            setShow(pageBox, false);
+            renderCalendar();
+        } else {
+            setText(btnSwitch, "切换：日历视图");
+            setShow(calendarBox, false);
+            setShow(tableWrap, true);
+            setShow(pageBox, false);
+            renderList();
+        }
+    }
+
+    // 视图切换按钮点击事件
+    btnSwitch.onclick = function() {
+        viewMode = viewMode === "calendar" ? "list" : "calendar";
+        updateView();
+    };
+
+    /**
+     * 请求指定年月的打卡记录
+     * @param {number} y 年份
+     * @param {number} m 月份
+     */
+    async function queryRecord(y, m) {
+        if (isLoading) {
+            return;
+        }
+        isLoading = true;
+        setText(tip, "加载中...");
+        setShow(tip, true);
+        setShow(calendarBox, false);
+        setShow(tableWrap, false);
+        allRecords = [];
+        tbody.innerHTML = "";
+
+        try {
+            const res = await fetch("/api_my_records_month", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({"dev": dev, "year": y, "month": m})
+            });
+            const data = await res.json();
+            if (!data.ok) {
+                setText(tip, data.msg || "查询失败");
+                setShow(tip, true);
+                return;
+            }
+            allRecords = data.records;
+            updateView();
+        } catch (err) {
+            setText(tip, "查询出错：" + err.message);
+            setShow(tip, true);
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    // 查询按钮点击事件
+    btnQuery.onclick = function() {
+        const y = selYear.value;
+        const m = selMonth.value;
+        queryRecord(y, m);
+    };
+
+    // 页面初始化入口
+    ;(async function init() {
+        fillMonth();
+        const yearRes = await getExistYearList();
+        if (!yearRes.ok) {
+            setText(tip, yearRes.msg || "获取年份失败");
+            setShow(tip, true);
+            return;
+        }
+        const yearList = yearRes.years;
+        if (!yearList || yearList.length === 0) {
+            setText(tip, "暂无打卡记录");
+            setShow(tip, true);
+            return;
+        }
+        // 填充年份下拉
+        for (let i = 0; i < yearList.length; i++) {
+            const y = yearList[i];
+            const opt = document.createElement("option");
+            opt.value = y;
+            opt.textContent = y + "年";
+            selYear.appendChild(opt);
+        }
+        const now = new Date();
+        const curY = String(now.getFullYear());
+        const curM = now.getMonth() + 1;
+        let hasCurYear = false;
+        for (let i = 0; i < yearList.length; i++) {
+            if (String(yearList[i]) === curY) {
+                hasCurYear = true;
+                break;
+            }
+        }
+        // 优先选中当前年份，没有就选列表第一个年份
+        if (hasCurYear) {
+            selYear.value = curY;
+        } else {
+            selYear.value = yearList[0];
+        }
+        selMonth.value = curM;
+        // 页面加载完成自动查询当月
+        queryRecord(selYear.value, selMonth.value);
+    })();
+});
+</script>
+</body>
+</html>

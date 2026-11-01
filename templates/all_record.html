@@ -1,0 +1,557 @@
+<!-- templates\all_record.html 打卡流水导出页面：员工筛选 + 年月选择 + 预览 + Excel导出 + 跳转报表 -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打卡流水导出</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:system-ui, -apple-system, sans-serif;
+}
+body{
+    background:#f7f8fa;
+    min-height:100vh;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+.btn-back{
+    padding:3px 8px;
+    font-size:12px;
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:5px;
+    margin-bottom:10px;
+    cursor:pointer;
+    align-self:flex-start;
+}
+.btn-back:active{
+    background:#1d4ed8;
+}
+.card{
+    background:#fff;
+    width:100%;
+    max-width:720px;
+    padding:14px 20px 20px 20px;
+    border-radius:16px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08);
+}
+.title{
+    font-size:20px;
+    font-weight:600;
+    text-align:center;
+    margin-bottom:8px;
+    color:#222;
+}
+.staff-tip{
+    font-size:13px;
+    color:#666;
+    margin-bottom:0;
+    min-width:0;
+}
+.scroll-tip{
+    font-size:12px;
+    color:#2563eb;
+    text-align:center;
+    margin-bottom:4px;
+}
+.select-bar{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap: wrap;
+    row-gap:4px;
+    margin-bottom:8px;
+}
+#btnClearAll{
+    padding:3px 8px;
+    font-size:12px;
+    border:1px solid #2563eb;
+    background:#fff;
+    color:#2563eb;
+    border-radius:6px;
+    cursor:pointer;
+    flex:0 0 auto;
+}
+#btnClearAll:active{
+    background:#2563eb;
+    color:#fff;
+}
+/* 员工选择容器，网格布局、滚动 */
+.staff-wrap{
+    border:1px solid #e5e7eb;
+    padding:8px;
+    border-radius:10px;
+    margin-bottom:10px;
+    max-height:140px;
+    overflow-y:auto;
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+    gap:6px;
+}
+/* 单个员工选项卡片 */
+.staff-item{
+    border:2px solid #d1d5db;
+    border-radius:8px;
+    padding:8px 4px;
+    text-align:center;
+    cursor:pointer;
+    user-select:none;
+    transition:0.15s;
+    background:#ffffff;
+    font-size:14px;
+    position:relative;
+    overflow:hidden;
+}
+/* 选中标记对勾 */
+.staff-item.active::after{
+    content:"✓";
+    position:absolute;
+    top:2px;
+    right:4px;
+    color:#2563eb;
+    font-weight:bold;
+    font-size:14px;
+}
+/* 选中状态样式 */
+.staff-item.active{
+    border-color:#2563eb;
+    background:#dbeafe;
+    font-weight:600;
+}
+.staff-item input{
+    display:none;
+}
+.filter-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+}
+.filter-row select{
+    flex:1;
+    padding:9px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    font-size:15px;
+}
+.btn-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+}
+.preview-btn,.export-btn,.report-btn{
+    flex:1;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    font-size:15px;
+    cursor:pointer;
+    transition:.15s;
+}
+.preview-btn{
+    background:#64748b;
+    color:#fff;
+}
+.export-btn{
+    background:#2563eb;
+    color:#fff;
+}
+.report-btn{
+    background:#10b981;
+    color:#fff;
+}
+.preview-btn:disabled,.export-btn:disabled,.report-btn:disabled{
+    opacity:0.55;
+    cursor:not-allowed;
+}
+
+/* 表格外层容器，支持横向滚动适配手机 */
+.table-wrap{
+    max-height:320px;
+    overflow-x:auto;
+    overflow-y:auto;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+}
+table{
+    width:100%;
+    min-width:480px;
+    border-collapse:collapse;
+}
+th,td{
+    border:1px solid #e5e7eb;
+    padding:5px 4px;
+    text-align:center;
+    font-size:13px;
+}
+th{
+    background:#f8fafc;
+    font-weight:600;
+}
+tr:nth-child(even){
+    background:#f9fafb;
+}
+
+/* Toast消息提示 */
+.toast{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    top:24px;
+    padding:11px 18px;
+    border-radius:10px;
+    color:#fff;
+    font-size:15px;
+    opacity:0;
+    transition:opacity 0.3s ease;
+    z-index:99;
+}
+.toast.show{
+    opacity:1;
+}
+.toast.success{
+    background:#22c55e;
+}
+.toast.error{
+    background:#ef4444;
+}
+.toast.warning{
+    background:#f59e0b;
+}
+</style>
+</head>
+<body>
+<!-- Toast提示容器 -->
+<div class="toast" id="toastBox"></div>
+
+<!-- 返回上一页按钮 -->
+<button class="btn-back" onclick="history.back()">返回</button>
+<div class="card">
+    <div class="title">打卡流水</div>
+
+    <div class="select-bar">
+        <button id="btnClearAll">清空选择</button>
+        <div class="staff-tip" id="selectTip">✅ 提示：不勾选员工，代表查询全部员工；预览最多62条，全部记录请导出</div>
+    </div>
+    <!-- 员工选择网格区域 -->
+    <div class="staff-wrap" id="staffWrap">加载员工列表...</div>
+
+    <!-- 年月下拉筛选 -->
+    <div class="filter-row">
+        <select id="selYear"></select>
+        <select id="selMonth"></select>
+    </div>
+
+    <!-- 功能按钮组 -->
+    <div class="btn-row">
+        <button class="preview-btn" id="btnPreview">查询预览</button>
+        <button class="export-btn" id="btnExport">导出Excel</button>
+        <button class="report-btn" id="btnReport">进入报表</button>
+    </div>
+
+    <div class="scroll-tip">📱 手机端可左右滑动表格查看</div>
+    <!-- 预览表格容器，默认隐藏 -->
+    <div class="table-wrap" id="tableWrap" style="display:none;">
+        <table>
+            <thead>
+                <tr>
+                    <th>工号</th>
+                    <th>姓名</th>
+                    <th>打卡时间</th>
+                    <th>打卡类型</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// DOM元素缓存
+const selYear = document.getElementById("selYear");
+const selMonth = document.getElementById("selMonth");
+const btnPreview = document.getElementById("btnPreview");
+const btnExport = document.getElementById("btnExport");
+const btnReport = document.getElementById("btnReport");
+const btnClearAll = document.getElementById("btnClearAll");
+const selectTip = document.getElementById("selectTip");
+const staffWrap = document.getElementById("staffWrap");
+const tableWrap = document.getElementById("tableWrap");
+const tbody = document.getElementById("tbody");
+const toastBox = document.getElementById("toastBox");
+
+// 请求头常量
+const JSON_CONTENT_TYPE = {"Content-Type":"application/json"};
+let isLoading = false; // 加载锁，防止重复点击
+
+/**
+ * 弹出Toast提示
+ * @param {string} text 提示文字
+ * @param {string} type 类型 success / warning / error
+ * @param {number} delay 显示时长ms
+ */
+function showToast(text, type="success", delay=2000){
+    toastBox.innerText = text;
+    toastBox.className = "toast " + type;
+    toastBox.classList.add("show");
+    setTimeout(()=>{
+        toastBox.classList.remove("show");
+    }, delay);
+}
+
+/**
+ * 判断是否微信浏览器（微信内置浏览器不能直接下载Excel）
+ */
+function isWeChatBrowser(){
+    const browserUA = navigator.userAgent;
+    const wechatReg = /MicroMessenger/i;
+    return wechatReg.test(browserUA);
+}
+
+/**
+ * 更新选中人员提示文字
+ */
+function updateSelectTip(){
+    const checked = document.querySelectorAll(".staff-check:checked").length;
+    if(checked === 0){
+        selectTip.innerText = "✅ 提示：不勾选员工，代表查询全部员工；预览最多62条，全部记录请导出";
+    }else{
+        selectTip.innerText = `✅ 已选中 ${checked} 名员工，仅查询选中人员`;
+    }
+}
+
+/**
+ * 填充月份下拉框 1~12月
+ */
+function fillMonth(){
+    selMonth.innerHTML = "";
+    for(let m = 1; m <= 12; m++){
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.innerText = m + "月";
+        selMonth.appendChild(opt);
+    }
+}
+
+/**
+ * 加载员工列表，渲染可选员工卡片
+ */
+async function loadStaff(){
+    try{
+        const res = await fetch("/api_staff_list", {
+            method:"POST",
+            headers:JSON_CONTENT_TYPE,
+            body:JSON.stringify({})
+        });
+        const data = await res.json();
+        if(!data.ok){
+            staffWrap.innerText = data.msg;
+            return;
+        }
+        staffWrap.innerHTML = "";
+        data.list.forEach(item=>{
+            const uid = item.uid;
+            const name = item.name;
+            const div = document.createElement("div");
+            div.className = "staff-item";
+            div.innerHTML = `
+                <input type="checkbox" value="${uid}" class="staff-check">
+                <div>${name}</div>
+            `
+            // 点击卡片切换选中状态
+            div.onclick = function(){
+                const ck = this.querySelector("input");
+                ck.checked = !ck.checked;
+                this.classList.toggle("active", ck.checked);
+                updateSelectTip();
+            }
+            staffWrap.appendChild(div);
+        })
+    }catch(e){
+        staffWrap.innerText = "员工列表加载失败";
+    }
+}
+
+/**
+ * 清空所有员工选中
+ */
+btnClearAll.onclick = function(){
+    document.querySelectorAll(".staff-item").forEach(el=>{
+        const ck = el.querySelector("input");
+        ck.checked = false;
+        el.classList.remove("active");
+    })
+    updateSelectTip();
+}
+
+/**
+ * 加载存在打卡记录的年份列表
+ */
+async function loadYearList(){
+    try{
+        const res = await fetch("/api_admin_exist_year", {
+            method:"POST",
+            headers:JSON_CONTENT_TYPE,
+            body:JSON.stringify({})
+        });
+        const data = await res.json();
+        if(!data.ok){
+            showToast(data.msg, "error");
+            return [];
+        }
+        selYear.innerHTML = "";
+        data.years.forEach(y=>{
+            const opt = document.createElement("option");
+            opt.value = y;
+            opt.innerText = y + "年";
+            selYear.appendChild(opt);
+        })
+        return data.years;
+    }catch(e){
+        showToast("年份加载异常", "error");
+        return [];
+    }
+}
+
+/**
+ * 获取当前勾选的员工uid数组
+ */
+function getSelectedUids(){
+    const arr = [];
+    document.querySelectorAll(".staff-check:checked").forEach(cb=>{
+        arr.push(cb.value);
+    });
+    return arr;
+}
+
+/**
+ * 查询预览按钮：请求预览流水，渲染表格
+ */
+btnPreview.onclick = async function(){
+    if(isLoading) return;
+    isLoading = true;
+    btnPreview.disabled = true;
+    btnExport.disabled = true;
+    btnReport.disabled = true;
+    tableWrap.style.display = "none";
+    tbody.innerHTML = "";
+    try{
+        const uidList = getSelectedUids();
+        const params = {
+            year: selYear.value,
+            month: selMonth.value,
+            uids: uidList
+        };
+        const resp = await fetch("/api_admin_preview_clock", {
+            method:"POST",
+            headers:JSON_CONTENT_TYPE,
+            body:JSON.stringify(params)
+        });
+        const data = await resp.json();
+        if(!data.ok){
+            showToast(data.msg, "error");
+            return;
+        }
+        if(data.records.length === 0){
+            showToast("没有打卡记录", "warning");
+            return;
+        }
+        showToast(`预览${data.records.length}条样例`, "success");
+        data.records.forEach(row=>{
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${row.uid}</td>
+                <td>${row.name}</td>
+                <td>${row.clock_dt}</td>
+                <td>${row.clock_type}</td>
+            `
+            tbody.appendChild(tr);
+        })
+        tableWrap.style.display = "block";
+    }catch(err){
+        showToast("预览异常：" + err.message, "error");
+    }finally{
+        isLoading = false;
+        btnPreview.disabled = false;
+        btnExport.disabled = false;
+        btnReport.disabled = false;
+    }
+}
+
+/**
+ * 导出Excel按钮
+ */
+btnExport.onclick = async function(){
+    if(isLoading) return;
+    // 微信浏览器拦截导出
+    if(isWeChatBrowser()){
+        showToast("⚠ 微信不支持导出Excel，请使用电脑浏览器导出", "warning", 4000);
+        return;
+    }
+
+    isLoading = true;
+    btnPreview.disabled = true;
+    btnExport.disabled = true;
+    btnReport.disabled = true;
+    try{
+        const uidList = getSelectedUids();
+        const params = {year: selYear.value, month: selMonth.value, uids: uidList};
+        const resp = await fetch("/api_admin_export_clock", {
+            method:"POST",
+            headers:JSON_CONTENT_TYPE,
+            body:JSON.stringify(params)
+        });
+        if(!resp.ok){
+            const errText = await resp.text();
+            showToast("导出失败："+errText, "error");
+            return;
+        }
+        // 下载blob文件
+        const blob = await resp.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `打卡流水_${selYear.value}年${selMonth.value}月.xlsx`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast("导出成功", "success");
+    }catch(err){
+        showToast("导出异常：" + err.message, "error", 3000);
+    }finally{
+        isLoading = false;
+        btnPreview.disabled = false;
+        btnExport.disabled = false;
+        btnReport.disabled = false;
+    }
+}
+
+/**
+ * 跳转报表页面
+ */
+btnReport.onclick = function(){
+    location.href = "/report";
+}
+
+/**
+ * 页面加载完成初始化
+ */
+document.addEventListener('DOMContentLoaded', async function () {
+    fillMonth();
+    await loadStaff();
+    const yearList = await loadYearList();
+    // 默认选中当前年月
+    const now = new Date();
+    const cy = String(now.getFullYear());
+    const cm = now.getMonth() + 1;
+    if(yearList.includes(cy)) selYear.value = cy;
+    selMonth.value = cm;
+    updateSelectTip();
+});
+</script>
+</body>
+</html>

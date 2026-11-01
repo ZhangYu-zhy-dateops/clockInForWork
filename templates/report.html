@@ -1,0 +1,563 @@
+<!-- templates\report.html 考勤月报表（状态矩阵页面） -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>考勤报表</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:system-ui, -apple-system, sans-serif;
+}
+body{
+    background:#f7f8fa;
+    padding:16px 16px 24px;
+}
+.btn-back{
+    padding:4px 10px;
+    font-size:13px;
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    margin-bottom:12px;
+    cursor:pointer;
+    transition:background 0.2s;
+}
+.btn-back:hover{background:#1d4ed8;}
+.btn-back:active{background:#1e40af;}
+
+.card{
+    background:#fff;
+    border-radius:18px;
+    box-shadow:0 2px 14px rgba(0,0,0,0.08);
+    margin:0 auto;
+    overflow:hidden;
+    position:relative;
+    height:calc(100vh - 84px);
+    display:flex;
+    flex-direction:column;
+}
+.title{
+    font-size:20px;
+    font-weight:600;
+    text-align:center;
+    padding:18px 0 8px;
+    color:#1f2937;
+}
+.ctrl-bar{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    padding:0 22px 10px;
+}
+.legend-bar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    padding:0 22px 12px;
+    font-size:12px;
+    color:#4b5563;
+}
+.legend-item{
+    display:flex;
+    align-items:center;
+    gap:4px;
+}
+.legend-dot{
+    width:14px;
+    height:14px;
+    border-radius:4px;
+}
+.pagination-bar{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+    padding:10px 0;
+    flex-wrap:wrap;
+}
+.pagination-bar button{
+    padding:4px 10px;
+    font-size:13px;
+}
+.pagination-bar span{
+    font-size:14px;
+    color:#444;
+}
+select,button{
+    padding:8px 14px;
+    font-size:14px;
+    border-radius:10px;
+    border:1px solid #d1d5db;
+    transition:0.2s;
+}
+select{
+    background:#fff;
+    color:#333;
+}
+select:focus{
+    outline:none;
+    border-color:#2563eb;
+}
+button{
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    cursor:pointer;
+}
+button:hover{background:#1d4ed8;}
+button:active{background:#1e40af;}
+button:disabled{
+    opacity:0.45;
+    cursor:not-allowed;
+    background:#2563eb;
+}
+#tip{
+    text-align:center;
+    padding:12px;
+    color:#6b7280;
+    font-size:15px;
+}
+.scroll-tip{
+    text-align:center;
+    color:#9ca3af;
+    font-size:13px;
+    padding:2px 0 6px;
+    display:block;
+}
+.table-wrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    flex-grow:1;
+    padding:0;
+}
+table{
+    border-collapse:collapse;
+    width:100%;
+    table-layout:fixed;
+}
+th,td{
+    border:1px solid #e5e7eb;
+    padding:6px 4px;
+    text-align:center;
+    font-size:12px;
+    white-space:normal;
+    word-break:break-all;
+    line-height:1.3;
+}
+th{
+    line-height:1.3;
+    background:#f3f4f6;
+    font-weight:600;
+    position:sticky;
+    top:0;
+    z-index:1;
+}
+/* 姓名列固定左侧，冻结列 */
+.staff-col{
+    position:sticky;
+    left:0;
+    background:#fff !important;
+    z-index:2;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+    width:70px !important;
+    min-width:70px !important;
+}
+thead .staff-col{
+    background:#f3f4f6 !important;
+    z-index:3;
+}
+
+/* 考勤状态背景色 */
+.status-normal{background:#d1fae5;color:#065f46;font-weight:500;}
+.status-missout{background:#fef3c7;color:#92400e;}
+.status-missin{background:#fed7aa;color:#9a3412;}
+.status-missall{background:#fecdd3;color:#9f1239;}
+
+/* 全局Toast提示浮层 */
+.toast{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    top:24px;
+    padding:10px 18px;
+    border-radius:10px;
+    color:#fff;
+    font-size:14px;
+    opacity:0;
+    transition:opacity 0.3s ease;
+    z-index:99;
+}
+.toast.show{opacity:1;}
+.toast.success{background:#22c55e;}
+.toast.warning{background:#f59e0b;}
+.toast.error{background:#ef4444;}
+
+/* 打印样式：清除固定高度，防止表格截断；禁止分页切断单元格；保留背景色 */
+@media print {
+    body{background:#fff;padding:0;}
+    .scroll-tip,.legend-bar,.ctrl-bar,.btn-back,.pagination-bar{display:none !important;}
+    .card{
+        box-shadow:none !important;
+        height:auto !important;
+        overflow:visible !important;
+    }
+    .table-wrap{
+        overflow:visible !important;
+    }
+    th{background:#eee !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    th,td{
+        padding:6px 3px;
+        line-height:1.3;
+    }
+    tr, th, td {
+        page-break-inside: avoid;
+    }
+    .status-normal{background:#d1fae5 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .status-missout{background:#fef3c7 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .status-missin{background:#fed7aa !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .status-missall{background:#fecdd3 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .toast{display:none;}
+}
+
+/* 手机端：表格最小宽度固定，横向滚动，防止单元格挤压变形 */
+@media (max-width:768px){
+    table{
+        table-layout:auto;
+        min-width:920px;
+        width:auto;
+    }
+    th,td{
+        padding:5px 3px;
+        font-size:12px;
+        line-height:1.3;
+    }
+    .staff-col{
+        width:70px !important;
+        min-width:70px !important;
+    }
+}
+</style>
+</head>
+<body>
+<!-- Toast提示容器 -->
+<div class="toast" id="toastBox"></div>
+<!-- 返回菜单按钮 -->
+<button class="btn-back" onclick="location.href='/menu'">返回</button>
+<div class="card">
+    <div class="title">考勤月报表（状态矩阵）</div>
+    <!-- 控制栏：年月选择、查询、打印、导出 -->
+    <div class="ctrl-bar">
+        <select id="sel-year"></select>
+        <select id="sel-month">
+            <option value="1">01月</option>
+            <option value="2">02月</option>
+            <option value="3">03月</option>
+            <option value="4">04月</option>
+            <option value="5">05月</option>
+            <option value="6">06月</option>
+            <option value="7">07月</option>
+            <option value="8">08月</option>
+            <option value="9">09月</option>
+            <option value="10">10月</option>
+            <option value="11">11月</option>
+            <option value="12">12月</option>
+        </select>
+        <button onclick="loadReport()">查询</button>
+        <!-- 打印按钮：微信/手机原生浏览器对window.print支持差，增加判断拦截提示 -->
+        <button id="btnPrint">打印/保存PDF</button>
+        <button id="btnExport" onclick="exportExcel()">导出Excel</button>
+    </div>
+    <!-- 图例说明 -->
+    <div class="legend-bar">
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#d1fae5;border:1px solid #a7f3d0"></span>
+            <span>正常</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#fef3c7;border:1px solid #fcd34d"></span>
+            <span>缺下班卡</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#fed7aa;border:1px solid #fdba74"></span>
+            <span>缺上班卡</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#fecdd3;border:1px solid #fda4af"></span>
+            <span>全天缺卡</span>
+        </div>
+    </div>
+    <!-- 提示文字区域 -->
+    <div id="tip">加载可用年份...</div>
+    <div class="scroll-tip">👉 左右滑动表格查看日期</div>
+    <!-- 表格滚动容器 -->
+    <div class="table-wrap">
+        <table id="repTable" style="display:none;">
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+    <!-- 分页控件 -->
+    <div class="pagination-bar" id="pagination" style="display:none;">
+        <button id="btnPrev">上一页</button>
+        <span id="pageInfo"></span>
+        <button id="btnNext">下一页</button>
+    </div>
+</div>
+
+<script>
+const yearSel = document.getElementById("sel-year");
+const monthSel = document.getElementById("sel-month");
+const tip = document.getElementById("tip");
+const table = document.getElementById("repTable");
+const thead = document.getElementById("thead");
+const tbody = document.getElementById("tbody");
+const btnExport = document.getElementById("btnExport");
+const toastBox = document.getElementById("toastBox");
+const pagination = document.getElementById("pagination");
+const btnPrev = document.getElementById("btnPrev");
+const btnNext = document.getElementById("btnNext");
+const pageInfo = document.getElementById("pageInfo");
+const btnPrint = document.getElementById("btnPrint");
+
+let isLoading = false;    // 加载锁，防止重复请求
+let currentPage = 1;      // 当前页码
+let totalPage = 1;        // 总页数
+
+/**
+ * Toast消息提示
+ * @param {string} text 提示文字
+ * @param {string} type 类型 success/warning/error
+ * @param {number} delay 停留毫秒
+ */
+function showToast(text, type="success", delay=2000){
+    toastBox.innerText = text;
+    toastBox.className = "toast " + type;
+    toastBox.classList.add("show");
+    setTimeout(()=>toastBox.classList.remove("show"), delay);
+}
+
+/**
+ * 判断是否微信内置浏览器
+ */
+function isWechatEnv(){
+    return /MicroMessenger/i.test(navigator.userAgent);
+}
+
+/**
+ * 判断是否移动端设备
+ */
+function isMobile(){
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+/**
+ * 打印按钮点击事件
+ * 微信内置浏览器直接屏蔽window.print，手机浏览器兼容性差，拦截提示
+ * PC端正常调用浏览器打印
+ */
+btnPrint.onclick = function(){
+    if(isWechatEnv()){
+        showToast("⚠ 微信不支持打印，请用电脑浏览器打开", "warning", 3500);
+        return;
+    }
+    if(isMobile()){
+        showToast("⚠ 手机端打印不稳定，请复制链接在电脑浏览器打开", "warning", 3500);
+        return;
+    }
+    window.print();
+};
+
+/**
+ * 加载年份下拉选项，从后端读取有打卡记录的年份
+ */
+async function loadYearOptions() {
+    try {
+        const res = await fetch("/api_admin_exist_year", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({})
+        });
+        if(!res.ok) throw new Error("请求异常");
+        const data = await res.json();
+        if (!data.ok || !data.years || !Array.isArray(data.years)) {
+            tip.innerText = "年份加载失败";
+            return;
+        }
+        yearSel.innerHTML = "";
+        const now = new Date();
+        const currY = String(now.getFullYear());
+        data.years.forEach(y=>{
+            const opt = document.createElement("option");
+            opt.value = y;
+            opt.innerText = y;
+            if(String(y) === currY) opt.selected = true;
+            yearSel.appendChild(opt);
+        })
+        monthSel.value = now.getMonth() + 1;
+        tip.innerText = "选择年月，点击查询";
+    } catch (e) {
+        console.error(e);
+        tip.innerText = "年份加载异常";
+        showToast("年份加载失败", "error");
+    }
+}
+
+// 上一页
+btnPrev.onclick = ()=>{
+    if(currentPage > 1) {
+        currentPage --;
+        loadReport();
+    }
+}
+// 下一页
+btnNext.onclick = ()=>{
+    if(currentPage < totalPage) {
+        currentPage ++;
+        loadReport();
+    }
+}
+
+/**
+ * 加载报表矩阵数据，请求后端接口
+ */
+async function loadReport() {
+    if(isLoading) return;
+    const y = Number(yearSel.value);
+    const m = Number(monthSel.value);
+    tip.innerText = "加载中...";
+    table.style.display = "none";
+    pagination.style.display = "none";
+    isLoading = true;
+    btnExport.disabled = true;
+    try {
+        const res = await fetch("/api_report_data", {
+            method:"POST",
+            credentials:"include",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({year:y,month:m, page:currentPage})
+        });
+        if(!res.ok) throw new Error("接口请求异常");
+        const data = await res.json();
+        if (!data.ok) {
+            tip.innerText = data.msg;
+            showToast(data.msg, "error");
+            return;
+        }
+        if (!data.list || data.list.length === 0) {
+            tip.innerText = "本月暂无打卡记录";
+            return;
+        }
+        tip.style.display = "none";
+        table.style.display = "table";
+        renderTable(data);
+
+        // 更新分页信息
+        currentPage = data.current_page;
+        totalPage = data.total_page;
+        pageInfo.innerText = `第 ${currentPage} / ${totalPage} 页`;
+        btnPrev.disabled = currentPage <= 1;
+        btnNext.disabled = currentPage >= totalPage;
+        pagination.style.display = "flex";
+
+        showToast("报表加载完成");
+    } catch (err) {
+        console.error(err);
+        tip.innerText = "请求异常";
+        showToast("报表加载失败", "error");
+    } finally {
+        isLoading = false;
+        btnExport.disabled = false;
+    }
+}
+
+/**
+ * 渲染表格DOM
+ * @param {object} data 后端返回报表数据 header_label表头、list行数据
+ */
+function renderTable(data) {
+    const header = data.header_label;
+    const list = data.list;
+    thead.innerHTML = "";
+    const tr = document.createElement("tr");
+    for(const h of header){
+        const th = document.createElement("th");
+        if(h === "姓名") th.className = "staff-col";
+        th.innerText = h.replace(" ", "\n");
+        tr.appendChild(th);
+    }
+    thead.appendChild(tr);
+    tbody.innerHTML = "";
+    for(const item of list){
+        const trRow = document.createElement("tr");
+        for(const h of header){
+            const td = document.createElement("td");
+            if(h === "姓名") td.className = "staff-col";
+            const val = item[h];
+            td.innerText = val;
+            // 根据状态添加对应着色class
+            if(val === "正常") td.classList.add("status-normal");
+            else if(val === "缺下班卡") td.classList.add("status-missout");
+            else if(val === "缺上班卡") td.classList.add("status-missin");
+            else if(val === "全天缺卡") td.classList.add("status-missall");
+            trRow.appendChild(td);
+        }
+        tbody.appendChild(trRow);
+    }
+}
+
+/**
+ * 导出Excel
+ * 微信环境拦截，微信blob下载会失效，提示用户换浏览器
+ */
+async function exportExcel() {
+    if(isLoading) return;
+    if(isWechatEnv()){
+        showToast("⚠ 微信不支持导出Excel，请用系统浏览器打开", "warning", 3000);
+        return;
+    }
+    const y = Number(yearSel.value);
+    const m = Number(monthSel.value);
+    btnExport.disabled = true;
+    tip.innerText = "正在生成汇总表...";
+    try{
+        const resp = await fetch("/api_report_export", {
+            method:"POST",
+            credentials:"include",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({year:y,month:m})
+        });
+        if(!resp.ok){
+            const err = await resp.json();
+            tip.innerText = err.msg || "导出失败";
+            showToast(err.msg || "导出失败", "error");
+            return;
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `月度考勤汇总_${y}年${m}月.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        tip.innerText = "✅ 汇总表导出成功";
+        showToast("导出成功");
+    }catch(e){
+        console.error(e);
+        tip.innerText = "导出异常："+e;
+        showToast("导出失败", "error");
+    }finally{
+        btnExport.disabled = false;
+    }
+}
+
+// 页面初始化加载年份列表
+loadYearOptions();
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>修改管理员密码</title>
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:system-ui, sans-serif;
+}
+body{
+    background:#f7f8fa;
+    padding:16px 16px 24px;
+}
+.btn-back{
+    padding:3px 8px;
+    font-size:12px;
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:5px;
+    margin-bottom:12px;
+    cursor:pointer;
+}
+.btn-back:active{
+    background:#1d4ed8;
+}
+.card{
+    background:#fff;
+    border-radius:16px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08);
+    max-width:700px;
+    width:100%;
+    margin:0 auto;
+    padding:28px;
+    position:relative;
+}
+.title{
+    font-size:24px;
+    font-weight:600;
+    text-align:center;
+    margin-bottom:24px;
+    padding-top:20px;
+}
+.form-item{
+    margin-bottom:16px;
+    text-align:left;
+}
+.form-item label{
+    display:block;
+    margin-bottom:6px;
+    font-size:15px;
+}
+.form-item input{
+    width:100%;
+    padding:10px 12px;
+    font-size:15px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+}
+.btns{
+    margin-top:20px;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+}
+button{
+    padding:8px 16px;
+    font-size:15px;
+    border-radius:8px;
+    border:none;
+    background:#2563eb;
+    color:#fff;
+    cursor:pointer;
+}
+button:active{
+    background:#1d4ed8;
+}
+/* toast 样式，和其他页面统一 */
+.toast{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    top:24px;
+    padding:10px 16px;
+    border-radius:8px;
+    color:#fff;
+    font-size:15px;
+    opacity:0;
+    transition:opacity 0.3s;
+    z-index:99;
+}
+.toast.show{
+    opacity:1;
+}
+.toast.success{
+    background:#22c55e;
+}
+.toast.warning{
+    background:#f59e0b;
+}
+.toast.error{
+    background:#ef4444;
+}
+</style>
+</head>
+<body>
+<div class="toast" id="toastBox"></div>
+<button class="btn-back" onclick="location.href='/menu'">返回</button>
+<div class="card">
+    <div class="title">修改管理员密码</div>
+    <form id="pwdForm">
+        <div class="form-item">
+            <label>原密码：</label>
+            <input type="password" id="old_pwd" autocomplete="current-password">
+        </div>
+        <div class="form-item">
+            <label>新密码：</label>
+            <input type="password" id="new_pwd" autocomplete="new-password">
+        </div>
+        <div class="form-item">
+            <label>确认新密码：</label>
+            <input type="password" id="confirm_pwd" autocomplete="confirm-password">
+        </div>
+        <div class="btns">
+            <button type="submit">保存修改</button>
+        </div>
+    </form>
+</div>
+
+<script>
+const toastBox = document.getElementById("toastBox");
+function showToast(text, type="success", delay=2000){
+    toastBox.innerText = text;
+    toastBox.className = "toast " + type;
+    toastBox.classList.add("show");
+    setTimeout(()=>{
+        toastBox.classList.remove("show");
+    }, delay);
+}
+
+document.getElementById("pwdForm").onsubmit = async e=>{
+    e.preventDefault();
+    let old = document.getElementById("old_pwd").value.trim();
+    let newpwd = document.getElementById("new_pwd").value.trim();
+    let confirm = document.getElementById("confirm_pwd").value.trim();
+    let res = await fetch("/api_change_pwd",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({old_pwd:old, new_pwd:newpwd, confirm_pwd:confirm})
+    })
+    let ret = await res.json();
+    if(ret.ok){
+        showToast(ret.msg, "success");
+        setTimeout(()=>{
+            location.href="/menu";
+        }, 1200);
+    }else{
+        showToast(ret.msg, "error");
+    }
+}
+</script>
+</body>
+</html>
